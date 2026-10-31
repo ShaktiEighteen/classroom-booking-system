@@ -1,7 +1,30 @@
 # Classroom Booking and Timetable Management System
 ### DBMS Mini Project
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/ShaktiEighteen/classroom-booking-system)
+🌐 **Live Production Website:** [https://classroom-booking-system-xbgx.onrender.com/](https://classroom-booking-system-xbgx.onrender.com/)
+
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Render-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://classroom-booking-system-xbgx.onrender.com/)
+[![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![Flask](https://img.shields.io/badge/Flask-3.0-000000?style=for-the-badge&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
+[![Oracle Database](https://img.shields.io/badge/Oracle-21c%20XE-F80000?style=for-the-badge&logo=oracle&logoColor=white)](https://www.oracle.com/database/)
+[![JavaScript](https://img.shields.io/badge/Vanilla-JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
+[![Chart.js](https://img.shields.io/badge/Chart.js-4.0-FF6384?style=for-the-badge&logo=chartdotjs&logoColor=white)](https://www.chartjs.org/)
+
+---
+
+## Tech Stack Overview
+
+| Layer / Capability | Technology | Description |
+| :--- | :--- | :--- |
+| **Live Cloud Deployment** | **[Render](https://classroom-booking-system-xbgx.onrender.com/)** | Hosted Linux container web service with continuous deployment from GitHub. |
+| **WSGI Server** | **Gunicorn** | High-performance, concurrent production WSGI server. |
+| **Web Framework** | **Python Flask** | Clean MVC routing, Jinja2 templating, and raw SQL / procedure dispatch (no ORM). |
+| **Database Engine** | **Oracle Database 21c XE** | Pluggable database `XEPDB1` supporting enterprise constraints and ACID transactions. |
+| **Database Logic** | **Oracle PL/SQL** | Autonomous stored procedures (`book_periodic`, `book_oneoff`, `cancel_occurrence`, `find_free_rooms`), explicit cursors, and atomic savepoint rollbacks. |
+| **Conflict Enforcement** | **Compound Triggers & Function-Based Indexes** | `UQ_ACTIVE_ROOM_DATE_SLOT` for instantaneous slot liberation and mutating-table-free faculty clash detection. |
+| **Database Driver** | **python-oracledb** | High-throughput thin-mode pooled connections. |
+| **Frontend Presentation** | **HTML5, CSS3, Vanilla JS** | Responsive layout featuring Obsidian Dark Mode, Academic Light Mode, and toast notifications. |
+| **Data Analytics** | **Chart.js** | Interactive charts for space utilization and department loading. |
 
 ---
 
@@ -19,7 +42,7 @@ chmod +x start.sh
 ./start.sh
 ```
 
-The web application will launch and be available at:
+The web application will launch locally at:
 **`http://localhost:5000/`** (or `http://127.0.0.1:5000/`)
 
 ---
@@ -213,10 +236,9 @@ sqlplus CLASSROOM_APP/Classroom#2026@localhost:1521/XEPDB1 @sql/run_all.sql
 5. **Free-Room Finder (`/free-rooms`):** Relational set difference search (`MINUS` & `INTERSECT`) filtering by date, time slot, minimum capacity, and equipment.
 6. **Reports & Analytics (`/reports`):** Space utilization views, department load breakdown, cancellation audit history, and dynamic Chart.js visualizations.
 7. **2D Interactive Campus Heatmap (`/occupancy-map` or `/heatmap`):** Visual architectural layout across North Academic Complex & Engineering Annex, color-coded by real-time status (Occupied vs Free) with capacity utilization badges for any chosen day and slot.
-8. **Interactive SQL Lab & Query Runner (`/sql-console`):** In-browser query workbench with instant execution of all 15 demo queries, syntax timing stats, and safety guardrails.
-9. **Real-Time Conflict & Concurrency Simulator (`/conflict-simulator`):** Live laboratory demonstrating constraint enforcement (`ORA-20001` Room Clash, `ORA-20002` Faculty Clash, and instant Slot Liberation on cancellation) with detailed trace diagnostics.
-10. **3NF Schema & Data Dictionary Explorer (`/schema-explorer`):** Interactive database dictionary with live row counts, primary/foreign key definitions, and normalization explanations.
-11. **Obsidian Dark Mode / Academic Light Theme:** Persistent theme toggle with high-contrast data visualization.
+8. **Real-Time Conflict & Concurrency Simulator (`/conflict-simulator`):** Live laboratory demonstrating constraint enforcement (`ORA-20001` Room Clash, `ORA-20002` Faculty Clash, and instant Slot Liberation on cancellation) with detailed trace diagnostics.
+9. **3NF Schema & Data Dictionary Explorer (`/schema-explorer`):** Interactive database dictionary with live row counts, primary/foreign key definitions, and normalization explanations.
+10. **Obsidian Dark Mode / Academic Light Theme:** Persistent theme toggle with high-contrast data visualization.
 
 ---
 
