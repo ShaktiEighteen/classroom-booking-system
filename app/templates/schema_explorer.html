@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}3NF Relational Schema Explorer{% endblock %}
+
+{% block content %}
+<div class="page-header" style="margin-bottom: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h1 style="font-size: 1.75rem; font-weight: 800; color: #0f172a;">3NF Relational Schema Explorer</h1>
+            <p style="color: #64748b; font-size: 0.95rem;">Interactive dictionary of database relations, primary/foreign keys, check constraints, and 3NF normalization proofs.</p>
+        </div>
+        <div class="badge badge-primary" style="font-size: 0.82rem; padding: 0.4rem 0.8rem;">
+            <i class="fa-solid fa-layer-group"></i> 10 Tables Normalized
+        </div>
+    </div>
+</div>
+
+<!-- Architecture Highlights Grid -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+    <div class="card" style="margin: 0; padding: 1rem;">
+        <div style="font-weight: 700; font-size: 0.9rem; color: var(--primary); margin-bottom: 0.25rem;">
+            <i class="fa-solid fa-atom"></i> First Normal Form (1NF)
+        </div>
+        <p style="font-size: 0.8rem; color: #64748b; margin: 0;">
+            All table attributes are purely atomic scalar types; room-to-facility M:N relations factored into <code>ROOM_FACILITY</code>.
+        </p>
+    </div>
+
+    <div class="card" style="margin: 0; padding: 1rem;">
+        <div style="font-weight: 700; font-size: 0.9rem; color: var(--purple); margin-bottom: 0.25rem;">
+            <i class="fa-solid fa-key"></i> Second Normal Form (2NF)
+        </div>
+        <p style="font-size: 0.8rem; color: #64748b; margin: 0;">
+            Zero partial key dependencies. Non-prime attributes depend entirely on complete candidate keys.
+        </p>
+    </div>
+
+    <div class="card" style="margin: 0; padding: 1rem;">
+        <div style="font-weight: 700; font-size: 0.9rem; color: var(--success); margin-bottom: 0.25rem;">
+            <i class="fa-solid fa-diagram-project"></i> Third Normal Form (3NF)
+        </div>
+        <p style="font-size: 0.8rem; color: #64748b; margin: 0;">
+            Zero transitive dependencies ($X \to Y \to Z$). Department metadata factored away from Courses and Faculty.
+        </p>
+    </div>
+</div>
+
+<!-- Tables Dictionary -->
+<div style="display: flex; flex-direction: column; gap: 1.5rem;">
+    {% for tbl in tables %}
+        <div class="card">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <div class="card-title">
+                    <i class="fa-solid fa-table" style="color: var(--primary);"></i>
+                    <strong>{{ tbl.name }}</strong>
+                    <span style="font-size: 0.76rem; font-weight: normal; color: #64748b; margin-left: 0.5rem;">
+                        {{ tbl.description }}
+                    </span>
+                </div>
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    <span class="badge badge-secondary" style="font-size: 0.74rem;">
+                        Primary Key: <code>{{ tbl.pk }}</code>
+                    </span>
+                    <span class="badge badge-primary" style="font-size: 0.74rem;">
+                        {{ tbl.cols|length }} Columns
+                    </span>
+                </div>
+            </div>
+            <div class="card-body" style="padding: 0;">
+                <div class="table-responsive">
+                    <table class="table" style="font-size: 0.84rem;">
+                        <thead>
+                            <tr>
+                                <th>Column Name</th>
+                                <th>Data Type</th>
+                                <th>Key Type</th>
+                                <th>Nullable</th>
+                                <th>Constraints & Validation</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for col in tbl.cols %}
+                                <tr>
+                                    <td>
+                                        <code>{{ col.name }}</code>
+                                    </td>
+                                    <td>{{ col.type }}</td>
+                                    <td>
+                                        {% if col.pk %}
+                                            <span class="badge badge-danger" style="font-size: 0.68rem;"><i class="fa-solid fa-key"></i> PK</span>
+                                        {% elif col.fk %}
+                                            <span class="badge badge-purple" style="font-size: 0.68rem;"><i class="fa-solid fa-link"></i> FK &rarr; {{ col.fk }}</span>
+                                        {% elif col.uk %}
+                                            <span class="badge badge-primary" style="font-size: 0.68rem;">UNIQUE</span>
+                                        {% else %}
+                                            <span style="color: #94a3b8;">&mdash;</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if col.nullable %}
+                                            <span style="color: #64748b;">NULL</span>
+                                        {% else %}
+                                            <strong style="color: #0f172a;">NOT NULL</strong>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if col.chk %}
+                                            <code style="color: #d97706;">CHECK ({{ col.chk }})</code>
+                                        {% elif col.fk %}
+                                            <span>References <code>{{ col.fk }}</code></span>
+                                        {% else %}
+                                            <span style="color: #94a3b8;">Standard domain</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

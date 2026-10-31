@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}Courses - Master Data{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+    <div>
+        <h1 style="font-size: 1.75rem; font-weight: 800; color: #0f172a;">Academic Courses</h1>
+        <p style="color: #64748b; font-size: 0.95rem;">Catalog of departmental course curriculum, credits, and scheduled bookings.</p>
+    </div>
+    <button class="btn btn-primary" onclick="document.getElementById('add-course-modal').style.display='flex'">
+        <i class="fa-solid fa-plus"></i> Add Course
+    </button>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">
+            <i class="fa-solid fa-graduation-cap" style="color: var(--primary);"></i>
+            Offered Courses ({{ courses|length }})
+        </div>
+    </div>
+    <div class="card-body" style="padding: 0;">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Course Code</th>
+                        <th>Course Title</th>
+                        <th>Department</th>
+                        <th>Credits</th>
+                        <th>Active Bookings</th>
+                        <th style="text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in courses %}
+                        <tr>
+                            <td><code>{{ c.course_code }}</code></td>
+                            <td><strong>{{ c.course_title }}</strong></td>
+                            <td><span class="badge badge-secondary">{{ c.dept_code }}</span> {{ c.dept_name }}</td>
+                            <td><strong>{{ c.credits }}</strong> credits</td>
+                            <td><span class="badge badge-primary">{{ c.booking_count }}</span></td>
+                            <td style="text-align: right; white-space: nowrap;">
+                                <button type="button" class="btn btn-secondary btn-sm" onclick="openEditCourseModal({{ c.course_id }}, '{{ c.course_title }}', {{ c.credits }}, {{ c.dept_id }})" title="Edit">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </button>
+                                <form method="POST" action="{{ url_for('course_delete', course_id=c.course_id) }}" style="display: inline;" onsubmit="return confirm('Delete course {{ c.course_code }}?');">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Modal -->
+<div id="add-course-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: #fff; width: 480px; max-width: 90%; border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow-lg);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="font-size: 1.15rem; font-weight: 700;">Add Course</h3>
+            <button type="button" onclick="document.getElementById('add-course-modal').style.display='none'" style="border: none; background: none; font-size: 1.4rem; cursor: pointer;">&times;</button>
+        </div>
+        <form method="POST" action="{{ url_for('course_create') }}">
+            <div class="form-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 1.25rem;">
+                <div class="form-group">
+                    <label class="form-label">Course Code *</label>
+                    <input type="text" name="course_code" class="form-control" placeholder="e.g. CS601" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Credits *</label>
+                    <input type="number" name="credits" class="form-control" value="3" min="1" max="10" required>
+                </div>
+                <div class="form-group full-width">
+                    <label class="form-label">Course Title *</label>
+                    <input type="text" name="course_title" class="form-control" placeholder="e.g. Distributed Cloud Computing" required>
+                </div>
+                <div class="form-group full-width">
+                    <label class="form-label">Offering Department *</label>
+                    <select name="dept_id" class="form-control" required>
+                        {% for d in departments %}
+                            <option value="{{ d.dept_id }}">{{ d.dept_code }} - {{ d.dept_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('add-course-modal').style.display='none'">Cancel</button>
+                <button type="submit" class="btn btn-primary">Create Course</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="edit-course-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: #fff; width: 480px; max-width: 90%; border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow-lg);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="font-size: 1.15rem; font-weight: 700;">Edit Course</h3>
+            <button type="button" onclick="document.getElementById('edit-course-modal').style.display='none'" style="border: none; background: none; font-size: 1.4rem; cursor: pointer;">&times;</button>
+        </div>
+        <form id="edit-course-form" method="POST" action="">
+            <div class="form-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 1.25rem;">
+                <div class="form-group full-width">
+                    <label class="form-label">Course Title *</label>
+                    <input type="text" id="edit-title" name="course_title" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Credits *</label>
+                    <input type="number" id="edit-credits" name="credits" class="form-control" min="1" max="10" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Department *</label>
+                    <select id="edit-course-dept" name="dept_id" class="form-control" required>
+                        {% for d in departments %}
+                            <option value="{{ d.dept_id }}">{{ d.dept_code }} - {{ d.dept_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('edit-course-modal').style.display='none'">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openEditCourseModal(id, title, credits, deptId) {
+    document.getElementById('edit-course-form').action = '/courses/update/' + id;
+    document.getElementById('edit-title').value = title;
+    document.getElementById('edit-credits').value = credits;
+    document.getElementById('edit-course-dept').value = deptId;
+    document.getElementById('edit-course-modal').style.display = 'flex';
+}
+</script>
+{% endblock %}

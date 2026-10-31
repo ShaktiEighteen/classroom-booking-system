@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+
+{% block title %}Utilization Reports & Analytics{% endblock %}
+
+{% block content %}
+<div class="page-header" style="margin-bottom: 1.5rem;">
+    <h1 style="font-size: 1.75rem; font-weight: 800; color: #0f172a;">Reports & Space Utilization Analytics</h1>
+    <p style="color: #64748b; font-size: 0.95rem;">Demonstrating analytical views (<code>room_utilization_vw</code>, <code>booking_history_vw</code>) and cursor-based reporting.</p>
+</div>
+
+<!-- Interactive Charts Row -->
+<div style="display: grid; grid-template-columns: 2fr 1.2fr; gap: 1.5rem; margin-bottom: 1.75rem; align-items: start;">
+    
+    <!-- Chart: Room Utilization -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fa-solid fa-chart-bar" style="color: var(--primary);"></i>
+                Room Utilization Volume (Active vs Cancelled)
+            </div>
+        </div>
+        <div class="card-body">
+            <div style="height: 280px; position: relative;">
+                <canvas id="roomChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart: Department Distribution -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fa-solid fa-chart-pie" style="color: var(--purple);"></i>
+                Department Lecture Share
+            </div>
+        </div>
+        <div class="card-body">
+            <div style="height: 280px; position: relative;">
+                <canvas id="deptChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Table 1: Room Utilization View -->
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">
+            <i class="fa-solid fa-table-cells" style="color: var(--primary);"></i>
+            Room Utilization View (<code>room_utilization_vw</code>)
+        </div>
+    </div>
+    <div class="card-body" style="padding: 0;">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Room Number</th>
+                        <th>Building</th>
+                        <th>Type</th>
+                        <th>Capacity</th>
+                        <th>Active Bookings</th>
+                        <th>Cancelled</th>
+                        <th>Days Utilized</th>
+                        <th>Distinct Slots</th>
+                        <th>Completion %</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in room_util %}
+                        <tr>
+                            <td><strong>{{ r.room_number }}</strong></td>
+                            <td>{{ r.building }}</td>
+                            <td>
+                                {% if r.room_type == 'CLASSROOM' %}
+                                    <span class="badge badge-primary">Classroom</span>
+                                {% elif r.room_type == 'LAB' %}
+                                    <span class="badge badge-purple">Lab</span>
+                                {% else %}
+                                    <span class="badge badge-success">Seminar Hall</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ r.capacity }}</td>
+                            <td><span class="badge badge-success">{{ r.active_bookings_count }}</span></td>
+                            <td><span class="badge badge-danger">{{ r.cancelled_bookings_count }}</span></td>
+                            <td>{{ r.active_days_utilized }} days</td>
+                            <td>{{ r.distinct_slots_used }} slots</td>
+                            <td><strong>{{ r.active_success_rate_pct }}%</strong></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Table 2: Department Utilization Summary -->
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">
+            <i class="fa-solid fa-building-columns" style="color: #0284c7;"></i>
+            Departmental Space Allocation Summary
+        </div>
+    </div>
+    <div class="card-body" style="padding: 0;">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Code</th>
+                        <th>Department</th>
+                        <th>Total Active Lectures</th>
+                        <th>Faculty Count</th>
+                        <th>Courses Taught</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in dept_util %}
+                        <tr>
+                            <td><span class="badge badge-primary">{{ d.dept_code }}</span></td>
+                            <td><strong>{{ d.dept_name }}</strong></td>
+                            <td><span class="badge badge-success">{{ d.total_lectures }}</span></td>
+                            <td>{{ d.faculty_count }}</td>
+                            <td>{{ d.courses_taught }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Table 3: Cancellation Audit Trail -->
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">
+            <i class="fa-solid fa-clock-rotate-left" style="color: var(--danger);"></i>
+            Cancellation Audit History (<code>booking_history_vw</code>)
+        </div>
+    </div>
+    <div class="card-body" style="padding: 0;">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Booking ID</th>
+                        <th>Date & Day</th>
+                        <th>Slot</th>
+                        <th>Room</th>
+                        <th>Faculty</th>
+                        <th>Type</th>
+                        <th>Reason for Cancellation</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in cancellations %}
+                        <tr>
+                            <td>#{{ c.booking_id }}</td>
+                            <td><strong>{{ c.occurrence_date|format_date }}</strong> ({{ c.day_of_week }})</td>
+                            <td>{{ c.slot_name }}</td>
+                            <td>{{ c.room_number }}</td>
+                            <td>{{ c.faculty_name }}</td>
+                            <td>
+                                {% if c.booking_type == 'PERIODIC' %}
+                                    <span class="badge badge-primary">Periodic</span>
+                                {% else %}
+                                    <span class="badge badge-purple">One-Off</span>
+                                {% endif %}
+                            </td>
+                            <td><span style="color: #b91c1c;">{{ c.cancellation_reason or 'No reason provided' }}</span></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // 1. Fetch Room Utilization Data
+    fetch('/api/charts/room-utilization')
+        .then(res => res.json())
+        .then(data => {
+            const ctx = document.getElementById('roomChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [
+                        {
+                            label: 'Active Lectures',
+                            data: data.active,
+                            backgroundColor: '#2563eb',
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'Cancelled Lectures',
+                            data: data.cancelled,
+                            backgroundColor: '#ef4444',
+                            borderRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { precision: 0 } }
+                    }
+                }
+            });
+        });
+
+    // 2. Fetch Department Lecture Share Data
+    fetch('/api/charts/dept-distribution')
+        .then(res => res.json())
+        .then(data => {
+            const ctx = document.getElementById('deptChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        data: data.counts,
+                        backgroundColor: ['#2563eb', '#7c3aed', '#059669', '#d97706', '#dc2626']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right' }
+                    }
+                }
+            });
+        });
+});
+</script>
+{% endblock %}

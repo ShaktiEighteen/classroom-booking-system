@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Bookings Management{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+    <div>
+        <h1 style="font-size: 1.75rem; font-weight: 800; color: #0f172a;">Reservations & Lectures</h1>
+        <p style="color: #64748b; font-size: 0.95rem;">Audit log of all periodic semester schedules, guest lectures, and single-occurrence cancellations.</p>
+    </div>
+    <a href="{{ url_for('new_booking_form') }}" class="btn btn-primary">
+        <i class="fa-solid fa-plus"></i> New Reservation
+    </a>
+</div>
+
+<!-- Filters Bar -->
+<div class="card" style="margin-bottom: 1.25rem;">
+    <div class="card-body" style="padding: 1rem 1.25rem;">
+        <form method="GET" action="{{ url_for('bookings_list') }}" style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
+            <div class="form-group" style="min-width: 170px;">
+                <label class="form-label">Booking Type</label>
+                <select name="type" class="form-control" onchange="this.form.submit()">
+                    <option value="">All Types</option>
+                    <option value="PERIODIC" {{ 'selected' if selected_type == 'PERIODIC' else '' }}>Periodic (Weekly)</option>
+                    <option value="ONEOFF" {{ 'selected' if selected_type == 'ONEOFF' else '' }}>One-Off (Single)</option>
+                </select>
+            </div>
+
+            <div class="form-group" style="min-width: 170px;">
+                <label class="form-label">Occurrence Status</label>
+                <select name="status" class="form-control" onchange="this.form.submit()">
+                    <option value="">All Statuses</option>
+                    <option value="ACTIVE" {{ 'selected' if selected_status == 'ACTIVE' else '' }}>Active</option>
+                    <option value="CANCELLED" {{ 'selected' if selected_status == 'CANCELLED' else '' }}>Cancelled</option>
+                </select>
+            </div>
+
+            {% if selected_type or selected_status %}
+                <a href="{{ url_for('bookings_list') }}" class="btn btn-secondary btn-sm" style="margin-bottom: 2px;">Reset Filters</a>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">
+            <i class="fa-solid fa-calendar-check" style="color: var(--primary);"></i>
+            Booking Occurrences (Showing {{ bookings|length }})
+        </div>
+    </div>
+    <div class="card-body" style="padding: 0;">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Date & Day</th>
+                        <th>Time Slot</th>
+                        <th>Room</th>
+                        <th>Type</th>
+                        <th>Title / Course</th>
+                        <th>Faculty</th>
+                        <th>Status</th>
+                        <th style="text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for b in bookings %}
+                        <tr>
+                            <td>
+                                <strong>{{ b.occurrence_date|format_date }}</strong>
+                                <div style="font-size: 0.78rem; color: #64748b;">{{ b.day_of_week }}</div>
+                            </td>
+                            <td>{{ b.slot_name }}</td>
+                            <td>
+                                <span class="badge badge-secondary">
+                                    <i class="fa-solid fa-location-dot"></i> {{ b.room_number }} ({{ b.building }})
+                                </span>
+                            </td>
+                            <td>
+                                {% if b.booking_type == 'PERIODIC' %}
+                                    <span class="badge badge-primary">Periodic</span>
+                                {% else %}
+                                    <span class="badge badge-purple">One-Off</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong>{{ b.course_code or '' }}</strong> {{ b.title_purpose }}
+                            </td>
+                            <td>{{ b.faculty_name }}</td>
+                            <td>
+                                {% if b.status == 'ACTIVE' %}
+                                    <span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> Active</span>
+                                {% else %}
+                                    <span class="badge badge-danger" title="{{ b.cancellation_reason }}">
+                                        <i class="fa-solid fa-ban"></i> Cancelled
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: right; white-space: nowrap;">
+                                {% if b.status == 'ACTIVE' %}
+                                    <form method="POST" action="{{ url_for('booking_cancel_occurrence') }}" style="display: inline;" onsubmit="return confirmCancel('Cancel this specific lecture occurrence on {{ b.occurrence_date|format_date }}? The slot will be freed immediately.');">
+                                        <input type="hidden" name="booking_id" value="{{ b.booking_id }}">
+                                        <input type="hidden" name="occurrence_date" value="{{ b.occurrence_date|format_date }}">
+                                        <input type="hidden" name="reason" value="Cancelled via Bookings List">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm" title="Cancel this single lecture">
+                                            Cancel Slot
+                                        </button>
+                                    </form>
+
+                                    {% if b.booking_type == 'PERIODIC' %}
+                                        <form method="POST" action="{{ url_for('booking_cancel_series', booking_id=b.booking_id) }}" style="display: inline;" onsubmit="return confirm('Cancel ENTIRE periodic series for Booking #{{ b.booking_id }}?');">
+                                            <input type="hidden" name="reason" value="Entire periodic series cancelled by user">
+                                            <button type="submit" class="btn btn-secondary btn-sm" title="Cancel all remaining lectures in this series">
+                                                Cancel Series
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                {% else %}
+                                    <span style="font-size: 0.75rem; color: #94a3b8; font-style: italic;">
+                                        Slot freed
+                                    </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

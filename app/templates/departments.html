@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Departments - Master Data{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+    <div>
+        <h1 style="font-size: 1.75rem; font-weight: 800; color: #0f172a;">Academic Departments</h1>
+        <p style="color: #64748b; font-size: 0.95rem;">Manage university faculties, course offerings, and departmental building locations.</p>
+    </div>
+    <button class="btn btn-primary" onclick="document.getElementById('add-dept-modal').style.display='flex'">
+        <i class="fa-solid fa-plus"></i> Add Department
+    </button>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">
+            <i class="fa-solid fa-building-columns" style="color: var(--primary);"></i>
+            Departments List ({{ departments|length }})
+        </div>
+    </div>
+    <div class="card-body" style="padding: 0;">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Code</th>
+                        <th>Department Name</th>
+                        <th>Office Location</th>
+                        <th>Faculty Count</th>
+                        <th>Courses Offered</th>
+                        <th style="text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in departments %}
+                        <tr>
+                            <td><span class="badge badge-primary">{{ d.dept_code }}</span></td>
+                            <td><strong>{{ d.dept_name }}</strong></td>
+                            <td>{{ d.office_location or 'N/A' }}</td>
+                            <td>{{ d.faculty_count }} professors</td>
+                            <td>{{ d.course_count }} courses</td>
+                            <td style="text-align: right; white-space: nowrap;">
+                                <a href="{{ url_for('timetable', type='dept', id=d.dept_id) }}" class="btn btn-secondary btn-sm" title="View Department Timetable">
+                                    <i class="fa-solid fa-calendar"></i>
+                                </a>
+                                <button type="button" class="btn btn-secondary btn-sm" onclick="openEditDeptModal({{ d.dept_id }}, '{{ d.dept_name }}', '{{ d.office_location or '' }}')" title="Edit">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </button>
+                                <form method="POST" action="{{ url_for('department_delete', dept_id=d.dept_id) }}" style="display: inline;" onsubmit="return confirm('Delete department {{ d.dept_code }}?');">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Modal -->
+<div id="add-dept-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: #fff; width: 450px; max-width: 90%; border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow-lg);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="font-size: 1.15rem; font-weight: 700;">Add Department</h3>
+            <button type="button" onclick="document.getElementById('add-dept-modal').style.display='none'" style="border: none; background: none; font-size: 1.4rem; cursor: pointer;">&times;</button>
+        </div>
+        <form method="POST" action="{{ url_for('department_create') }}">
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label class="form-label">Department Code *</label>
+                <input type="text" name="dept_code" class="form-control" placeholder="e.g. CSE" required>
+            </div>
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label class="form-label">Department Name *</label>
+                <input type="text" name="dept_name" class="form-control" placeholder="e.g. Computer Science and Engineering" required>
+            </div>
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label class="form-label">Office Location</label>
+                <input type="text" name="office_location" class="form-control" placeholder="e.g. Block A, Floor 3">
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('add-dept-modal').style.display='none'">Cancel</button>
+                <button type="submit" class="btn btn-primary">Create Department</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="edit-dept-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: #fff; width: 450px; max-width: 90%; border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow-lg);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="font-size: 1.15rem; font-weight: 700;">Edit Department</h3>
+            <button type="button" onclick="document.getElementById('edit-dept-modal').style.display='none'" style="border: none; background: none; font-size: 1.4rem; cursor: pointer;">&times;</button>
+        </div>
+        <form id="edit-dept-form" method="POST" action="">
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label class="form-label">Department Name *</label>
+                <input type="text" id="edit-dept-name" name="dept_name" class="form-control" required>
+            </div>
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label class="form-label">Office Location</label>
+                <input type="text" id="edit-dept-office" name="office_location" class="form-control">
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('edit-dept-modal').style.display='none'">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openEditDeptModal(deptId, deptName, office) {
+    document.getElementById('edit-dept-form').action = '/departments/update/' + deptId;
+    document.getElementById('edit-dept-name').value = deptName;
+    document.getElementById('edit-dept-office').value = office;
+    document.getElementById('edit-dept-modal').style.display = 'flex';
+}
+</script>
+{% endblock %}

@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}Weekly Timetable Grid - Classroom Booking System{% endblock %}
+
+{% block content %}
+<div class="page-header" style="margin-bottom: 1.5rem;">
+    <h1 style="font-size: 1.75rem; font-weight: 800; color: #0f172a;">Weekly Timetable Schedule</h1>
+    <p style="color: #64748b; font-size: 0.95rem;">Interactive visual timetable grid by classroom, faculty member, or academic department.</p>
+</div>
+
+<!-- Selector Card -->
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-body" style="padding: 1.25rem;">
+        <form id="timetable-filter-form" method="GET" action="{{ url_for('timetable') }}" style="display: flex; gap: 1.5rem; align-items: flex-end; flex-wrap: wrap;">
+            
+            <div class="form-group" style="min-width: 200px;">
+                <label class="form-label"><i class="fa-solid fa-filter"></i> View Schedule By</label>
+                <select name="type" id="timetable-type-select" class="form-control">
+                    <option value="room" {{ 'selected' if filter_type == 'room' else '' }}>Classroom / Laboratory</option>
+                    <option value="faculty" {{ 'selected' if filter_type == 'faculty' else '' }}>Faculty Member</option>
+                    <option value="dept" {{ 'selected' if filter_type == 'dept' else '' }}>Academic Department</option>
+                </select>
+            </div>
+
+            <div class="form-group" style="min-width: 280px; flex: 1;">
+                <label class="form-label"><i class="fa-solid fa-crosshairs"></i> Select Specific Entity</label>
+                <select name="id" id="timetable-entity-select" class="form-control">
+                    {% if filter_type == 'room' %}
+                        {% for r in rooms %}
+                            <option value="{{ r.room_id }}" {{ 'selected' if entity_id == (r.room_id|string) else '' }}>
+                                {{ r.room_number }} ({{ r.building }} &bull; Cap: {{ r.capacity }})
+                            </option>
+                        {% endfor %}
+                    {% elif filter_type == 'faculty' %}
+                        {% for f in faculty %}
+                            <option value="{{ f.faculty_id }}" {{ 'selected' if entity_id == (f.faculty_id|string) else '' }}>
+                                {{ f.name }}
+                            </option>
+                        {% endfor %}
+                    {% else %}
+                        {% for d in departments %}
+                            <option value="{{ d.dept_id }}" {{ 'selected' if entity_id == (d.dept_id|string) else '' }}>
+                                {{ d.dept_code }} - {{ d.dept_name }}
+                            </option>
+                        {% endfor %}
+                    {% endif %}
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="margin-bottom: 2px;">
+                <i class="fa-solid fa-arrows-rotate"></i> Refresh Schedule
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Timetable Grid Header Bar -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+    <div style="font-size: 1.15rem; font-weight: 700; color: #0f172a;">
+        <i class="fa-solid fa-calendar-days" style="color: var(--primary);"></i>
+        Schedule for: <span style="color: var(--primary);">{{ entity_name }}</span>
+    </div>
+    <div style="display: flex; gap: 0.75rem; font-size: 0.78rem;">
+        <span style="display: flex; align-items: center; gap: 0.35rem;">
+            <span style="width: 12px; height: 12px; background: var(--primary-light); border-left: 3px solid var(--primary); display: inline-block;"></span> Periodic Class
+        </span>
+        <span style="display: flex; align-items: center; gap: 0.35rem;">
+            <span style="width: 12px; height: 12px; background: var(--purple-light); border-left: 3px solid var(--purple); display: inline-block;"></span> One-off Event
+        </span>
+    </div>
+</div>
+
+<!-- Timetable Grid Table -->
+<div class="timetable-container">
+    <table class="timetable-grid">
+        <thead>
+            <tr>
+                <th class="slot-col">Time Slot</th>
+                {% for day in days_of_week %}
+                    <th>{{ day }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for slot in time_slots %}
+                <tr>
+                    <!-- Time slot header cell -->
+                    <td class="slot-header">
+                        <div style="font-weight: 700; color: #0f172a;">{{ slot.slot_name.split('(')[0].strip() }}</div>
+                        <div style="font-size: 0.75rem; color: #64748b; font-family: 'JetBrains Mono', monospace;">
+                            {{ slot.start_time }} - {{ slot.end_time }}
+                        </div>
+                    </td>
+
+                    <!-- Day Cells -->
+                    {% for day in days_of_week %}
+                        <td>
+                            {% set occurrences = grid[slot.slot_order][day] %}
+                            {% if occurrences %}
+                                {% for occ in occurrences %}
+                                    <div class="timetable-cell-content {{ 'oneoff' if occ.booking_type == 'ONEOFF' else '' }}">
+                                        <div>
+                                            <div class="timetable-cell-title">
+                                                {{ occ.course_code or '' }} {{ occ.title_purpose }}
+                                            </div>
+                                            <div class="timetable-cell-sub">
+                                                {% if filter_type == 'room' %}
+                                                    <i class="fa-solid fa-user-tie"></i> {{ occ.faculty_name }}
+                                                {% elif filter_type == 'faculty' %}
+                                                    <i class="fa-solid fa-door-open"></i> {{ occ.room_number }}
+                                                {% else %}
+                                                    <i class="fa-solid fa-door-open"></i> {{ occ.room_number }} &bull; {{ occ.faculty_name }}
+                                                {% endif %}
+                                            </div>
+                                        </div>
+
+                                        <!-- Cancel This Lecture Button -->
+                                        <form method="POST" action="{{ url_for('booking_cancel_occurrence') }}" onsubmit="return confirmCancel('Cancel this specific lecture on {{ occ.occurrence_date|format_date }}? The slot will immediately become free.');">
+                                            <input type="hidden" name="booking_id" value="{{ occ.booking_id }}">
+                                            <input type="hidden" name="occurrence_date" value="{{ occ.occurrence_date|format_date }}">
+                                            <input type="hidden" name="reason" value="Cancelled via Timetable Grid">
+                                            <button type="submit" class="timetable-cancel-btn" title="Cancel this lecture and free slot">
+                                                <i class="fa-solid fa-xmark"></i> Cancel Lecture
+                                            </button>
+                                        </form>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <div style="height: 100%; display: flex; align-items: center; justify-content: center;">
+                                    <span style="font-size: 0.74rem; color: #cbd5e1; font-weight: 500;">Free Slot</span>
+                                </div>
+                            {% endif %}
+                        </td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div style="margin-top: 1rem; font-size: 0.8rem; color: #64748b;">
+    <i class="fa-solid fa-lightbulb" style="color: #f59e0b;"></i>
+    <strong>Tip:</strong> Clicking <em>Cancel Lecture</em> immediately marks the specific date occurrence as <code>CANCELLED</code> in the database. Due to the unique function-based index <code>UQ_ACTIVE_ROOM_DATE_SLOT</code>, the room/slot combination instantly appears as free for any new booking!
+</div>
+{% endblock %}

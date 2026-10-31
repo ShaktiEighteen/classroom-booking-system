@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}Faculty Members - Master Data{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+    <div>
+        <h1 style="font-size: 1.75rem; font-weight: 800; color: #0f172a;">Faculty Members</h1>
+        <p style="color: #64748b; font-size: 0.95rem;">Professors, lecturers, and teaching staff across academic departments.</p>
+    </div>
+    <button class="btn btn-primary" onclick="document.getElementById('add-faculty-modal').style.display='flex'">
+        <i class="fa-solid fa-plus"></i> Add Faculty Member
+    </button>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">
+            <i class="fa-solid fa-chalkboard-user" style="color: var(--primary);"></i>
+            Faculty Roster ({{ faculty|length }})
+        </div>
+    </div>
+    <div class="card-body" style="padding: 0;">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Code</th>
+                        <th>Name</th>
+                        <th>Department</th>
+                        <th>Designation</th>
+                        <th>Email Address</th>
+                        <th>Active Schedule</th>
+                        <th style="text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for f in faculty %}
+                        <tr>
+                            <td><code>{{ f.faculty_code }}</code></td>
+                            <td><strong>{{ f.first_name }} {{ f.last_name }}</strong></td>
+                            <td><span class="badge badge-secondary">{{ f.dept_code }}</span> {{ f.dept_name }}</td>
+                            <td>{{ f.designation }}</td>
+                            <td><a href="mailto:{{ f.email }}" style="color: var(--primary); text-decoration: none;">{{ f.email }}</a></td>
+                            <td>
+                                <span class="badge badge-primary">{{ f.active_lectures }} lectures</span>
+                            </td>
+                            <td style="text-align: right; white-space: nowrap;">
+                                <a href="{{ url_for('timetable', type='faculty', id=f.faculty_id) }}" class="btn btn-secondary btn-sm" title="View Faculty Timetable">
+                                    <i class="fa-solid fa-calendar"></i>
+                                </a>
+                                <button type="button" class="btn btn-secondary btn-sm" onclick="openEditFacultyModal({{ f.faculty_id }}, '{{ f.first_name }}', '{{ f.last_name }}', '{{ f.email }}', {{ f.dept_id }}, '{{ f.designation }}')" title="Edit">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </button>
+                                <form method="POST" action="{{ url_for('faculty_delete', faculty_id=f.faculty_id) }}" style="display: inline;" onsubmit="return confirm('Delete faculty member {{ f.first_name }} {{ f.last_name }}?');">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Faculty Modal -->
+<div id="add-faculty-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: #fff; width: 480px; max-width: 90%; border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow-lg);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="font-size: 1.15rem; font-weight: 700;">Add Faculty Member</h3>
+            <button type="button" onclick="document.getElementById('add-faculty-modal').style.display='none'" style="border: none; background: none; font-size: 1.4rem; cursor: pointer;">&times;</button>
+        </div>
+        <form method="POST" action="{{ url_for('faculty_create') }}">
+            <div class="form-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">Faculty Code *</label>
+                    <input type="text" name="faculty_code" class="form-control" placeholder="FAC_CS04" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Department *</label>
+                    <select name="dept_id" class="form-control" required>
+                        {% for d in departments %}
+                            <option value="{{ d.dept_id }}">{{ d.dept_code }} - {{ d.dept_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">First Name *</label>
+                    <input type="text" name="first_name" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Last Name *</label>
+                    <input type="text" name="last_name" class="form-control" required>
+                </div>
+                <div class="form-group full-width">
+                    <label class="form-label">Email Address *</label>
+                    <input type="email" name="email" class="form-control" placeholder="faculty@university.edu" required>
+                </div>
+                <div class="form-group full-width">
+                    <label class="form-label">Designation</label>
+                    <select name="designation" class="form-control">
+                        <option value="Professor">Professor</option>
+                        <option value="Associate Professor">Associate Professor</option>
+                        <option value="Assistant Professor" selected>Assistant Professor</option>
+                        <option value="Adjunct Lecturer">Adjunct Lecturer</option>
+                    </select>
+                </div>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('add-faculty-modal').style.display='none'">Cancel</button>
+                <button type="submit" class="btn btn-primary">Create Faculty</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Faculty Modal -->
+<div id="edit-faculty-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: #fff; width: 480px; max-width: 90%; border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow-lg);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="font-size: 1.15rem; font-weight: 700;">Edit Faculty Member</h3>
+            <button type="button" onclick="document.getElementById('edit-faculty-modal').style.display='none'" style="border: none; background: none; font-size: 1.4rem; cursor: pointer;">&times;</button>
+        </div>
+        <form id="edit-faculty-form" method="POST" action="">
+            <div class="form-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">First Name *</label>
+                    <input type="text" id="edit-fname" name="first_name" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Last Name *</label>
+                    <input type="text" id="edit-lname" name="last_name" class="form-control" required>
+                </div>
+                <div class="form-group full-width">
+                    <label class="form-label">Email Address *</label>
+                    <input type="email" id="edit-email" name="email" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Department *</label>
+                    <select id="edit-dept" name="dept_id" class="form-control" required>
+                        {% for d in departments %}
+                            <option value="{{ d.dept_id }}">{{ d.dept_code }} - {{ d.dept_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Designation</label>
+                    <select id="edit-des" name="designation" class="form-control">
+                        <option value="Professor">Professor</option>
+                        <option value="Associate Professor">Associate Professor</option>
+                        <option value="Assistant Professor">Assistant Professor</option>
+                        <option value="Adjunct Lecturer">Adjunct Lecturer</option>
+                    </select>
+                </div>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('edit-faculty-modal').style.display='none'">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openEditFacultyModal(id, fname, lname, email, deptId, des) {
+    document.getElementById('edit-faculty-form').action = '/faculty/update/' + id;
+    document.getElementById('edit-fname').value = fname;
+    document.getElementById('edit-lname').value = lname;
+    document.getElementById('edit-email').value = email;
+    document.getElementById('edit-dept').value = deptId;
+    document.getElementById('edit-des').value = des;
+    document.getElementById('edit-faculty-modal').style.display = 'flex';
+}
+</script>
+{% endblock %}

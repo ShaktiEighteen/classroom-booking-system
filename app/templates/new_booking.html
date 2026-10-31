@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}New Reservation - Classroom Booking System{% endblock %}
+
+{% block content %}
+<div class="page-header" style="margin-bottom: 1.5rem;">
+    <h1 style="font-size: 1.75rem; font-weight: 800; color: #0f172a;">Reserve Classroom / Laboratory</h1>
+    <p style="color: #64748b; font-size: 0.95rem;">Create a recurring weekly semester lecture series or a single one-off academic reservation.</p>
+</div>
+
+<div class="card" style="max-width: 850px; margin: 0 auto;">
+    <div class="card-header">
+        <div class="card-title">
+            <i class="fa-solid fa-calendar-plus" style="color: var(--primary);"></i> Reservation Details
+        </div>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('booking_create') }}" id="booking-form">
+            
+            <!-- Booking Type Radio Switcher -->
+            <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.5rem;">
+                <label class="form-label" style="margin-bottom: 0.5rem; display: block;">Select Booking Type *</label>
+                <div style="display: flex; gap: 2rem; flex-wrap: wrap;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 600;">
+                        <input type="radio" name="booking_type" id="type-periodic" value="PERIODIC" checked>
+                        <span>Periodic (Weekly lecture recurring for full semester)</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 600;">
+                        <input type="radio" name="booking_type" id="type-oneoff" value="ONEOFF" {{ 'checked' if pre_date else '' }}>
+                        <span>One-Off (Single exam, guest lecture, or event)</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Common Fields -->
+            <div class="form-grid">
+                
+                <!-- Room Selector -->
+                <div class="form-group">
+                    <label class="form-label">Teaching Space / Room *</label>
+                    <select name="room_id" class="form-control" required>
+                        <option value="">-- Choose Classroom or Lab --</option>
+                        {% for r in rooms %}
+                            <option value="{{ r.room_id }}" {{ 'selected' if pre_room_id == (r.room_id|string) else '' }}>
+                                {{ r.room_number }} ({{ r.building }} &bull; {{ r.room_type }} &bull; Cap: {{ r.capacity }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Faculty Selector -->
+                <div class="form-group">
+                    <label class="form-label">Faculty In-Charge *</label>
+                    <select name="faculty_id" class="form-control" required>
+                        <option value="">-- Choose Faculty Member --</option>
+                        {% for f in faculty %}
+                            <option value="{{ f.faculty_id }}">{{ f.name }} ({{ f.designation }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Course Selector (Optional) -->
+                <div class="form-group">
+                    <label class="form-label">Course (Optional if guest lecture)</label>
+                    <select name="course_id" class="form-control">
+                        <option value="">-- No specific course (Event / Guest Lecture) --</option>
+                        {% for c in courses %}
+                            <option value="{{ c.course_id }}">{{ c.course_code }} - {{ c.course_title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Time Slot -->
+                <div class="form-group">
+                    <label class="form-label">Time Slot *</label>
+                    <select name="slot_id" class="form-control" required>
+                        <option value="">-- Choose Standard Time Slot --</option>
+                        {% for s in slots %}
+                            <option value="{{ s.slot_id }}" {{ 'selected' if pre_slot_id == (s.slot_id|string) else '' }}>
+                                {{ s.slot_name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+            </div>
+
+            <!-- Dynamic Periodic Fields -->
+            <div id="periodic-fields" style="background: var(--primary-light); border: 1px solid #bfdbfe; border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.5rem;">
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--primary); margin-bottom: 0.75rem;">
+                    <i class="fa-solid fa-repeat"></i> Periodic Semester Schedule
+                </h4>
+                <div class="form-grid" style="margin-bottom: 0;">
+                    <div class="form-group">
+                        <label class="form-label">Day of the Week *</label>
+                        <select name="day_of_week" id="day_of_week" class="form-control" required>
+                            <option value="Monday">Monday</option>
+                            <option value="Tuesday">Tuesday</option>
+                            <option value="Wednesday">Wednesday</option>
+                            <option value="Thursday">Thursday</option>
+                            <option value="Friday">Friday</option>
+                            <option value="Saturday">Saturday</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Target Academic Semester *</label>
+                        <select name="semester_id" id="semester_id" class="form-control" required>
+                            {% for sem in semesters %}
+                                <option value="{{ sem.semester_id }}">
+                                    {{ sem.semester_name }} ({{ sem.start_date|format_date }} to {{ sem.end_date|format_date }})
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <p style="font-size: 0.78rem; color: #1e40af; margin-top: 0.5rem;">
+                    <i class="fa-solid fa-circle-info"></i> The PL/SQL engine will iterate through every week in the semester and atomically create all occurrences. If any single date produces a room or faculty clash, the entire series will be safely rolled back.
+                </p>
+            </div>
+
+            <!-- Dynamic One-Off Fields -->
+            <div id="oneoff-fields" style="display: none; background: var(--purple-light); border: 1px solid #ddd6fe; border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.5rem;">
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--purple); margin-bottom: 0.75rem;">
+                    <i class="fa-solid fa-calendar-day"></i> One-Off Single Session
+                </h4>
+                <div class="form-group" style="max-width: 320px;">
+                    <label class="form-label">Specific Date *</label>
+                    <input type="date" name="booking_date" id="booking_date" class="form-control" value="{{ pre_date or today_str }}">
+                </div>
+            </div>
+
+            <!-- Title / Purpose -->
+            <div class="form-group full-width" style="margin-bottom: 1.75rem;">
+                <label class="form-label">Title / Academic Purpose *</label>
+                <input type="text" name="title_purpose" class="form-control" placeholder="e.g. CS201 DBMS Regular Lecture or AI Guest Seminar" required>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 1rem; align-items: center;">
+                <a href="{{ url_for('bookings_list') }}" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary" style="padding: 0.65rem 1.5rem; font-size: 0.95rem;">
+                    <i class="fa-solid fa-circle-check"></i> Confirm Reservation
+                </button>
+            </div>
+
+        </form>
+    </div>
+</div>
+{% endblock %}

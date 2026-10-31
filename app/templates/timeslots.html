@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Time Slots - Master Data{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+    <div>
+        <h1 style="font-size: 1.75rem; font-weight: 800; color: #0f172a;">Standard Time Slots</h1>
+        <p style="color: #64748b; font-size: 0.95rem;">Academic class scheduling periods, start/end hours, and chronological sequence ordering.</p>
+    </div>
+    <button class="btn btn-primary" onclick="document.getElementById('add-slot-modal').style.display='flex'">
+        <i class="fa-solid fa-plus"></i> Add Time Slot
+    </button>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">
+            <i class="fa-solid fa-clock" style="color: var(--primary);"></i>
+            Configured Time Periods ({{ slots|length }})
+        </div>
+    </div>
+    <div class="card-body" style="padding: 0;">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Order</th>
+                        <th>Slot Name</th>
+                        <th>Start Time</th>
+                        <th>End Time</th>
+                        <th>Duration</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in slots %}
+                        <tr>
+                            <td><span class="badge badge-secondary">#{{ s.slot_order }}</span></td>
+                            <td><strong>{{ s.slot_name }}</strong></td>
+                            <td><code>{{ s.start_time }}</code></td>
+                            <td><code>{{ s.end_time }}</code></td>
+                            <td>60 minutes</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Modal -->
+<div id="add-slot-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: #fff; width: 440px; max-width: 90%; border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow-lg);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="font-size: 1.15rem; font-weight: 700;">Add Time Slot</h3>
+            <button type="button" onclick="document.getElementById('add-slot-modal').style.display='none'" style="border: none; background: none; font-size: 1.4rem; cursor: pointer;">&times;</button>
+        </div>
+        <form method="POST" action="{{ url_for('timeslot_create') }}">
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label class="form-label">Slot Name *</label>
+                <input type="text" name="slot_name" class="form-control" placeholder="e.g. Slot 9 (18:00 - 19:00)" required>
+            </div>
+            <div class="form-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">Start Time (HH:MM) *</label>
+                    <input type="text" name="start_time" class="form-control" placeholder="18:00" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">End Time (HH:MM) *</label>
+                    <input type="text" name="end_time" class="form-control" placeholder="19:00" required>
+                </div>
+            </div>
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label class="form-label">Slot Sequence Order *</label>
+                <input type="number" name="slot_order" class="form-control" value="{{ (slots|length) + 1 }}" min="1" required>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('add-slot-modal').style.display='none'">Cancel</button>
+                <button type="submit" class="btn btn-primary">Create Slot</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

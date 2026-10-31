@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block title %}Classrooms & Labs - Master Data{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+    <div>
+        <h1 style="font-size: 1.75rem; font-weight: 800; color: #0f172a;">Classrooms & Laboratories</h1>
+        <p style="color: #64748b; font-size: 0.95rem;">Manage physical teaching spaces, seating capacities, and equipment facilities.</p>
+    </div>
+    <button class="btn btn-primary" onclick="document.getElementById('add-room-modal').style.display='flex'">
+        <i class="fa-solid fa-plus"></i> Add New Room
+    </button>
+</div>
+
+<!-- Filters Bar -->
+<div class="card" style="margin-bottom: 1.25rem;">
+    <div class="card-body" style="padding: 1rem 1.25rem;">
+        <form method="GET" action="{{ url_for('rooms_list') }}" style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
+            <div class="form-group" style="min-width: 180px;">
+                <label class="form-label">Filter by Type</label>
+                <select name="room_type" class="form-control" onchange="this.form.submit()">
+                    <option value="">All Room Types</option>
+                    <option value="CLASSROOM" {{ 'selected' if selected_type == 'CLASSROOM' else '' }}>Classroom</option>
+                    <option value="LAB" {{ 'selected' if selected_type == 'LAB' else '' }}>Laboratory</option>
+                    <option value="SEMINAR_HALL" {{ 'selected' if selected_type == 'SEMINAR_HALL' else '' }}>Seminar Hall / Auditorium</option>
+                </select>
+            </div>
+
+            <div class="form-group" style="min-width: 180px;">
+                <label class="form-label">Filter by Building</label>
+                <select name="building" class="form-control" onchange="this.form.submit()">
+                    <option value="">All Buildings</option>
+                    {% for b in buildings %}
+                        <option value="{{ b }}" {{ 'selected' if selected_building == b else '' }}>{{ b }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            {% if selected_type or selected_building %}
+                <a href="{{ url_for('rooms_list') }}" class="btn btn-secondary btn-sm" style="margin-bottom: 2px;">Reset Filters</a>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<!-- Rooms Table Card -->
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">
+            <i class="fa-solid fa-door-closed" style="color: var(--primary);"></i>
+            Registered Spaces ({{ rooms|length }})
+        </div>
+    </div>
+    <div class="card-body" style="padding: 0;">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Room Number</th>
+                        <th>Building</th>
+                        <th>Floor</th>
+                        <th>Type</th>
+                        <th>Capacity</th>
+                        <th>Equipped Facilities</th>
+                        <th style="text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in rooms %}
+                        <tr>
+                            <td>
+                                <strong>{{ r.room_number }}</strong>
+                            </td>
+                            <td>{{ r.building }}</td>
+                            <td>{{ r.floor }}</td>
+                            <td>
+                                {% if r.room_type == 'CLASSROOM' %}
+                                    <span class="badge badge-primary">Classroom</span>
+                                {% elif r.room_type == 'LAB' %}
+                                    <span class="badge badge-purple">Lab</span>
+                                {% else %}
+                                    <span class="badge badge-success">Seminar Hall</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong>{{ r.capacity }}</strong> seats
+                            </td>
+                            <td>
+                                <span style="font-size: 0.82rem; color: #475569;">
+                                    {{ r.facilities or 'Standard Seating' }}
+                                </span>
+                            </td>
+                            <td style="text-align: right; white-space: nowrap;">
+                                <a href="{{ url_for('timetable', type='room', id=r.room_id) }}" class="btn btn-secondary btn-sm" title="View Weekly Timetable">
+                                    <i class="fa-solid fa-calendar"></i>
+                                </a>
+                                <button type="button" class="btn btn-secondary btn-sm" onclick="openEditRoomModal({{ r.room_id }}, '{{ r.building }}', {{ r.floor }}, '{{ r.room_type }}', {{ r.capacity }})" title="Edit Room">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </button>
+                                <form method="POST" action="{{ url_for('room_delete', room_id=r.room_id) }}" style="display: inline;" onsubmit="return confirm('Delete room {{ r.room_number }}? This will cascade or fail if bookings exist.');">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete Room">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Add Room -->
+<div id="add-room-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: #fff; width: 500px; max-width: 90%; border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow-lg);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="font-size: 1.15rem; font-weight: 700;">Add New Room</h3>
+            <button type="button" onclick="document.getElementById('add-room-modal').style.display='none'" style="border: none; background: none; font-size: 1.4rem; cursor: pointer;">&times;</button>
+        </div>
+        <form method="POST" action="{{ url_for('room_create') }}">
+            <div class="form-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">Room Number *</label>
+                    <input type="text" name="room_number" class="form-control" placeholder="e.g. CR-A301" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Building *</label>
+                    <input type="text" name="building" class="form-control" placeholder="e.g. Block A" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Floor Number *</label>
+                    <input type="number" name="floor" class="form-control" value="1" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Room Type *</label>
+                    <select name="room_type" class="form-control" required>
+                        <option value="CLASSROOM">Classroom</option>
+                        <option value="LAB">Laboratory</option>
+                        <option value="SEMINAR_HALL">Seminar Hall / Auditorium</option>
+                    </select>
+                </div>
+                <div class="form-group full-width">
+                    <label class="form-label">Capacity (Students) *</label>
+                    <input type="number" name="capacity" class="form-control" value="60" min="1" required>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1.25rem;">
+                <label class="form-label">Installed Facilities</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; max-height: 120px; overflow-y: auto; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
+                    {% for f in facilities %}
+                        <label style="font-size: 0.82rem; display: flex; align-items: center; gap: 0.4rem; cursor: pointer;">
+                            <input type="checkbox" name="facility_ids" value="{{ f.facility_id }}"> {{ f.facility_name }}
+                        </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('add-room-modal').style.display='none'">Cancel</button>
+                <button type="submit" class="btn btn-primary">Create Room</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Edit Room -->
+<div id="edit-room-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: #fff; width: 450px; max-width: 90%; border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow-lg);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="font-size: 1.15rem; font-weight: 700;">Edit Room Details</h3>
+            <button type="button" onclick="document.getElementById('edit-room-modal').style.display='none'" style="border: none; background: none; font-size: 1.4rem; cursor: pointer;">&times;</button>
+        </div>
+        <form id="edit-room-form" method="POST" action="">
+            <div class="form-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">Building *</label>
+                    <input type="text" id="edit-building" name="building" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Floor *</label>
+                    <input type="number" id="edit-floor" name="floor" class="form-control" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Type *</label>
+                    <select id="edit-type" name="room_type" class="form-control" required>
+                        <option value="CLASSROOM">Classroom</option>
+                        <option value="LAB">Laboratory</option>
+                        <option value="SEMINAR_HALL">Seminar Hall / Auditorium</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Capacity *</label>
+                    <input type="number" id="edit-capacity" name="capacity" class="form-control" min="1" required>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('edit-room-modal').style.display='none'">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openEditRoomModal(roomId, building, floor, roomType, capacity) {
+    document.getElementById('edit-room-form').action = '/rooms/update/' + roomId;
+    document.getElementById('edit-building').value = building;
+    document.getElementById('edit-floor').value = floor;
+    document.getElementById('edit-type').value = roomType;
+    document.getElementById('edit-capacity').value = capacity;
+    document.getElementById('edit-room-modal').style.display = 'flex';
+}
+</script>
+{% endblock %}

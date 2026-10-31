@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}Free Room Finder - Classroom Booking System{% endblock %}
+
+{% block content %}
+<div class="page-header" style="margin-bottom: 1.5rem;">
+    <h1 style="font-size: 1.75rem; font-weight: 800; color: #0f172a;">Find Available Classrooms & Labs</h1>
+    <p style="color: #64748b; font-size: 0.95rem;">Search unallocated rooms using relational set operations (<code>MINUS</code> / <code>INTERSECT</code>) with capacity and equipment filters.</p>
+</div>
+
+<!-- Search Form Card -->
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-header">
+        <div class="card-title">
+            <i class="fa-solid fa-magnifying-glass" style="color: var(--primary);"></i> Availability Search Parameters
+        </div>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('free_rooms') }}">
+            <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 1.25rem;">
+                
+                <div class="form-group">
+                    <label class="form-label">Search Date *</label>
+                    <input type="date" name="date" class="form-control" value="{{ search_date }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Time Slot *</label>
+                    <select name="slot_id" class="form-control" required>
+                        {% for s in slots %}
+                            <option value="{{ s.slot_id }}" {{ 'selected' if slot_id == s.slot_id else '' }}>
+                                {{ s.slot_name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Minimum Seating Capacity</label>
+                    <input type="number" name="min_capacity" class="form-control" value="{{ min_capacity }}" min="0" step="5">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Required Facility (Optional)</label>
+                    <select name="facility_id" class="form-control">
+                        <option value="">-- Any / No specific facility --</option>
+                        {% for f in facilities %}
+                            <option value="{{ f.facility_id }}" {{ 'selected' if facility_id == f.facility_id else '' }}>
+                                {{ f.facility_name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+                <button type="submit" class="btn btn-primary" style="padding: 0.6rem 1.4rem;">
+                    <i class="fa-solid fa-magnifying-glass"></i> Search Available Rooms
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Search Results -->
+{% if error_msg %}
+    <div class="alert alert-danger">
+        <div class="alert-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <div class="alert-body">
+            <div class="alert-title">Query Execution Error</div>
+            <div class="alert-text">{{ error_msg }}</div>
+        </div>
+    </div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">
+            <i class="fa-solid fa-door-open" style="color: var(--success);"></i>
+            Available Rooms Found: <strong>{{ free_rooms|length }}</strong>
+        </div>
+        <span style="font-size: 0.8rem; color: #64748b;">
+            Date: <strong>{{ search_date }}</strong> &bull; Slot: <strong>#{{ slot_id }}</strong>
+        </span>
+    </div>
+    <div class="card-body" style="padding: 0;">
+        {% if free_rooms %}
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Room</th>
+                            <th>Building</th>
+                            <th>Floor</th>
+                            <th>Type</th>
+                            <th>Capacity</th>
+                            <th>Equipped Facilities</th>
+                            <th style="text-align: right;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in free_rooms %}
+                            <tr>
+                                <td>
+                                    <strong>{{ r.room_number }}</strong>
+                                </td>
+                                <td>{{ r.building }}</td>
+                                <td>Floor {{ r.floor }}</td>
+                                <td>
+                                    {% if r.room_type == 'CLASSROOM' %}
+                                        <span class="badge badge-primary">Classroom</span>
+                                    {% elif r.room_type == 'LAB' %}
+                                        <span class="badge badge-purple">Lab</span>
+                                    {% else %}
+                                        <span class="badge badge-success">Seminar Hall</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <strong>{{ r.capacity }}</strong> seats
+                                </td>
+                                <td>
+                                    <span style="font-size: 0.82rem; color: #475569;">
+                                        {{ r.facilities or 'Standard Classroom Equipment' }}
+                                    </span>
+                                </td>
+                                <td style="text-align: right;">
+                                    <a href="{{ url_for('new_booking_form', room_id=r.room_id, date=search_date, slot_id=slot_id) }}" class="btn btn-primary btn-sm">
+                                        <i class="fa-solid fa-plus"></i> Book This Room
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div style="padding: 3rem; text-align: center; color: #64748b;">
+                <i class="fa-solid fa-ban" style="font-size: 2.5rem; color: #ef4444; margin-bottom: 0.75rem;"></i>
+                <p style="font-weight: 600; font-size: 1.1rem; color: #0f172a;">No Rooms Available</p>
+                <p>Every classroom matching your capacity/facility criteria is currently occupied for this slot on {{ search_date }}.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Classroom Booking System{% endblock %}
+
+{% block content %}
+<div class="page-header" style="margin-bottom: 1.5rem;">
+    <h1 style="font-size: 1.75rem; font-weight: 800; color: #0f172a;">Executive Dashboard</h1>
+    <p style="color: #64748b; font-size: 0.95rem;">Real-time overview of academic spaces, daily schedules, and room allocation statistics.</p>
+</div>
+
+<!-- Key Performance Stats Grid -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon blue">
+            <i class="fa-solid fa-door-open"></i>
+        </div>
+        <div class="stat-info">
+            <div class="stat-value">{{ room_count }}</div>
+            <div class="stat-label">Active Classrooms & Labs</div>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon green">
+            <i class="fa-solid fa-chalkboard-user"></i>
+        </div>
+        <div class="stat-info">
+            <div class="stat-value">{{ faculty_count }}</div>
+            <div class="stat-label">Registered Faculty</div>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon purple">
+            <i class="fa-solid fa-calendar-check"></i>
+        </div>
+        <div class="stat-info">
+            <div class="stat-value">{{ today_count }}</div>
+            <div class="stat-label">Lectures Scheduled Today</div>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon amber">
+            <i class="fa-solid fa-layer-group"></i>
+        </div>
+        <div class="stat-info">
+            <div class="stat-value">{{ total_active }}</div>
+            <div class="stat-label">Total Active Occurrences</div>
+        </div>
+    </div>
+</div>
+
+<!-- Two-Column Layout -->
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; align-items: start;">
+    
+    <!-- Today's Schedule -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fa-solid fa-clock-rotate-left" style="color: var(--primary);"></i>
+                Today's Lecture Schedule ({{ today_day }}, {{ today_str }})
+            </div>
+            <a href="{{ url_for('timetable') }}" class="btn btn-secondary btn-sm">Full Timetable</a>
+        </div>
+        <div class="card-body" style="padding: 0;">
+            {% if today_bookings %}
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Time Slot</th>
+                                <th>Room</th>
+                                <th>Course / Event</th>
+                                <th>Faculty</th>
+                                <th>Type</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for b in today_bookings %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ b.slot_name }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-secondary" style="font-size: 0.8rem;">
+                                            <i class="fa-solid fa-location-dot"></i> {{ b.room_number }} ({{ b.building }})
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <strong>{{ b.course_code or '' }}</strong> {{ b.course_title or b.title_purpose }}
+                                    </td>
+                                    <td>{{ b.faculty_name }}</td>
+                                    <td>
+                                        {% if b.booking_type == 'PERIODIC' %}
+                                            <span class="badge badge-primary">Periodic</span>
+                                        {% else %}
+                                            <span class="badge badge-purple">One-Off</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <form method="POST" action="{{ url_for('booking_cancel_occurrence') }}" style="display: inline;" onsubmit="return confirmCancel('Cancel this specific lecture for today?');">
+                                            <input type="hidden" name="booking_id" value="{{ b.booking_id }}">
+                                            <input type="hidden" name="occurrence_date" value="{{ today_str }}">
+                                            <input type="hidden" name="reason" value="Cancelled via Dashboard">
+                                            <button type="submit" class="btn btn-outline-danger btn-sm" title="Cancel this lecture">
+                                                <i class="fa-solid fa-ban"></i> Cancel
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div style="padding: 2.5rem; text-align: center; color: #64748b;">
+                    <i class="fa-solid fa-calendar-xmark" style="font-size: 2.5rem; color: #cbd5e1; margin-bottom: 0.75rem;"></i>
+                    <p>No active lectures scheduled for today.</p>
+                    <a href="{{ url_for('new_booking_form') }}" class="btn btn-primary btn-sm" style="margin-top: 0.75rem;">Create a Booking</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Right Sidebar: Quick Actions & Top Utilized Rooms -->
+    <div>
+        <!-- Quick Shortcuts Card -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fa-solid fa-bolt" style="color: #f59e0b;"></i> Quick Actions
+                </div>
+            </div>
+            <div class="card-body" style="display: flex; flex-direction: column; gap: 0.6rem;">
+                <a href="{{ url_for('new_booking_form') }}" class="btn btn-primary" style="justify-content: flex-start;">
+                    <i class="fa-solid fa-plus-circle"></i> Reserve Classroom / Lab
+                </a>
+                <a href="{{ url_for('free_rooms') }}" class="btn btn-secondary" style="justify-content: flex-start;">
+                    <i class="fa-solid fa-magnifying-glass"></i> Find Available Classrooms
+                </a>
+                <a href="{{ url_for('timetable') }}" class="btn btn-secondary" style="justify-content: flex-start;">
+                    <i class="fa-solid fa-calendar-week"></i> Interactive Timetable Grid
+                </a>
+                <a href="{{ url_for('reports') }}" class="btn btn-secondary" style="justify-content: flex-start;">
+                    <i class="fa-solid fa-file-invoice"></i> Utilization Reports & Views
+                </a>
+            </div>
+        </div>
+
+        <!-- Top Utilized Rooms View Card -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fa-solid fa-chart-column" style="color: var(--primary);"></i> Top Utilized Rooms
+                </div>
+                <a href="{{ url_for('reports') }}" style="font-size: 0.8rem; color: var(--primary); text-decoration: none;">View All</a>
+            </div>
+            <div class="card-body" style="padding: 0;">
+                <table class="table" style="font-size: 0.82rem;">
+                    <thead>
+                        <tr>
+                            <th>Room</th>
+                            <th>Building</th>
+                            <th>Active Bookings</th>
+                            <th>Success %</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in top_rooms %}
+                            <tr>
+                                <td><strong>{{ r.room_number }}</strong></td>
+                                <td>{{ r.building }}</td>
+                                <td><span class="badge badge-primary">{{ r.active_bookings_count }}</span></td>
+                                <td>{{ r.active_success_rate_pct }}%</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
