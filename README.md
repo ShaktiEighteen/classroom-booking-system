@@ -1,6 +1,8 @@
 # Classroom Booking and Timetable Management System
 ### DBMS Mini Project
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/ShaktiEighteen/classroom-booking-system)
+
 ---
 
 ## 1. Quick Start (One-Command Execution)
