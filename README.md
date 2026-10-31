@@ -2,6 +2,7 @@
 ### DBMS Mini Project
 
 🌐 **Live Production Website:** [https://classroom-booking-system-xbgx.onrender.com/](https://classroom-booking-system-xbgx.onrender.com/)
+📄 **Lab 12 Mini Project Report:** [Download PDF](docs/Lab12_Mini_Project_Report.pdf) | [Download Word (.docx)](docs/Lab12_Mini_Project_Report.docx)
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Render-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://classroom-booking-system-xbgx.onrender.com/)
 [![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
