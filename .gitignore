@@ -20,3 +20,9 @@ __pycache__/
 Thumbs.db
 .vscode/
 .idea/
+
+# Reports and Documents
+*.docx
+*.pdf
+*report*
+*Report*
