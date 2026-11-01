@@ -1,9 +1,9 @@
 # Classroom Booking and Timetable Management System
 ### DBMS Mini Project
 
-🌐 **Live Production Website:** [https://classroom-booking-system-xbgx.onrender.com/](https://classroom-booking-system-xbgx.onrender.com/)
+🌐 **Live Production Website:** [https://classroom-booking-system-xbgx.onrender.com/](https://classroom-booking-system-1.onrender.com/)
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Render-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://classroom-booking-system-xbgx.onrender.com/)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Render-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://classroom-booking-system-1.onrender.com/)
 [![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-3.0-000000?style=for-the-badge&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
 [![Oracle Database](https://img.shields.io/badge/Oracle-21c%20XE-F80000?style=for-the-badge&logo=oracle&logoColor=white)](https://www.oracle.com/database/)
