@@ -195,30 +195,7 @@ class TestClassroomWebApp(unittest.TestCase):
         self.assertIn("execution_time_ms", data)
         print(f"[PASS] SQL Console & Query Runner verified ({data['row_count']} rows in {data['execution_time_ms']}ms).")
 
-    def test_15_conflict_simulator_scenarios(self):
-        """Tests live conflict simulation laboratory scenarios."""
-        res_page = self.client.get("/conflict-simulator")
-        self.assertEqual(res_page.status_code, 200)
-
-        # Room clash scenario
-        res_clash = self.client.post("/api/simulate-scenario", json={"scenario": "room_clash"})
-        self.assertEqual(res_clash.status_code, 200)
-        self.assertEqual(res_clash.get_json()["status"], "REJECTED")
-        self.assertEqual(res_clash.get_json()["code"], "ORA-20001")
-
-        # Faculty clash scenario
-        res_fac = self.client.post("/api/simulate-scenario", json={"scenario": "faculty_clash"})
-        self.assertEqual(res_fac.status_code, 200)
-        self.assertEqual(res_fac.get_json()["status"], "REJECTED")
-        self.assertEqual(res_fac.get_json()["code"], "ORA-20002")
-
-        # Slot liberation scenario
-        res_lib = self.client.post("/api/simulate-scenario", json={"scenario": "cancel_and_liberate"})
-        self.assertEqual(res_lib.status_code, 200)
-        self.assertEqual(res_lib.get_json()["status"], "SUCCESS")
-        print("[PASS] Conflict Simulator scenarios (ORA-20001, ORA-20002, Slot Liberation) verified.")
-
-    def test_16_occupancy_heatmap_and_schema_explorer(self):
+    def test_15_occupancy_heatmap_and_schema_explorer(self):
         """Tests 2D Occupancy Map and 3NF Schema Explorer."""
         res_map = self.client.get("/occupancy-map?day=Monday&slot=1")
         self.assertEqual(res_map.status_code, 200)

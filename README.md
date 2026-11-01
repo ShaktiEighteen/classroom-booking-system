@@ -236,9 +236,8 @@ sqlplus CLASSROOM_APP/Classroom#2026@localhost:1521/XEPDB1 @sql/run_all.sql
 5. **Free-Room Finder (`/free-rooms`):** Relational set difference search (`MINUS` & `INTERSECT`) filtering by date, time slot, minimum capacity, and equipment.
 6. **Reports & Analytics (`/reports`):** Space utilization views, department load breakdown, cancellation audit history, and dynamic Chart.js visualizations.
 7. **2D Interactive Campus Heatmap (`/occupancy-map` or `/heatmap`):** Visual architectural layout across North Academic Complex & Engineering Annex, color-coded by real-time status (Occupied vs Free) with capacity utilization badges for any chosen day and slot.
-8. **Real-Time Conflict & Concurrency Simulator (`/conflict-simulator`):** Live laboratory demonstrating constraint enforcement (`ORA-20001` Room Clash, `ORA-20002` Faculty Clash, and instant Slot Liberation on cancellation) with detailed trace diagnostics.
-9. **3NF Schema & Data Dictionary Explorer (`/schema-explorer`):** Interactive database dictionary with live row counts, primary/foreign key definitions, and normalization explanations.
-10. **Obsidian Dark Mode / Academic Light Theme:** Persistent theme toggle with high-contrast data visualization.
+8. **3NF Schema & Data Dictionary Explorer (`/schema-explorer`):** Interactive database dictionary with live row counts, primary/foreign key definitions, and normalization explanations.
+9. **Obsidian Dark Mode / Academic Light Theme:** Persistent theme toggle with high-contrast data visualization.
 
 ---
 
@@ -249,7 +248,7 @@ Run the automated test suites:
 venv\Scripts\python -m unittest discover -s tests -v
 ```
 
-### Verified Scenarios (20 / 20 Tests Passed - 100%):
+### Verified Scenarios (19 / 19 Tests Passed - 100%):
 - **Test (a):** Conflicting room reservation rejected (`ORA-20001: Room Clash`).
 - **Test (b):** Faculty clash rejected (`ORA-20002: Faculty Clash`).
 - **Test (c):** Periodic booking creates exactly one row per week across the semester (17 rows generated).

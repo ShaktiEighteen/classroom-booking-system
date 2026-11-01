@@ -911,97 +911,7 @@ def api_run_sql():
 
 
 # ----------------------------------------------------------------------------
-# 8. INTERACTIVE CONFLICT & CONCURRENCY SIMULATOR
-# ----------------------------------------------------------------------------
-@app.route("/conflict-simulator")
-def conflict_simulator():
-    return render_template("conflict_simulator.html", active_page="conflict_simulator")
-
-
-@app.route("/api/simulate-scenario", methods=["POST"])
-def api_simulate_scenario():
-    scenario = request.json.get("scenario") if request.json else ""
-    res = {}
-
-    if scenario == "room_clash":
-        # Attempt to book Room 1 on Monday Slot 1 (already taken by Alan Turing)
-        try:
-            db.call_book_periodic(
-                room_id=1, faculty_id=3, course_id=3,
-                day_of_week="Monday", slot_id=1, semester_id=1,
-                title_purpose="Simulated Double Allocation Attempt"
-            )
-            res = {"status": "UNEXPECTED_SUCCESS", "message": "Booking was unexpectedly accepted."}
-        except Exception as e:
-            err = db.format_oracle_error(e)
-            res = {
-                "status": "REJECTED",
-                "code": "ORA-20001",
-                "trigger": "trg_prevent_booking_conflicts",
-                "index": "UQ_ACTIVE_ROOM_DATE_SLOT",
-                "message": err,
-                "explanation": "Oracle unique function-based index and compound trigger detected that Room CR-A101 already has an ACTIVE session during Slot 1 on this date. The transaction was blocked immediately."
-            }
-
-    elif scenario == "faculty_clash":
-        # Attempt to book Alan Turing in Room 4 on Monday Slot 1 (he's in Room 1)
-        try:
-            db.call_book_periodic(
-                room_id=4, faculty_id=1, course_id=1,
-                day_of_week="Monday", slot_id=1, semester_id=1,
-                title_purpose="Simulated Faculty Teleportation Attempt"
-            )
-            res = {"status": "UNEXPECTED_SUCCESS", "message": "Booking was unexpectedly accepted."}
-        except Exception as e:
-            err = db.format_oracle_error(e)
-            res = {
-                "status": "REJECTED",
-                "code": "ORA-20002",
-                "trigger": "trg_prevent_booking_conflicts",
-                "message": err,
-                "explanation": "Oracle compound trigger verified that Dr. Alan Turing is already lecturing in Room CR-A101 during Monday Slot 1. Preventing faculty double-scheduling prevented classroom chaos!"
-            }
-
-    elif scenario == "cancel_and_liberate":
-        # Cancel Alan Turing on 2026-08-31 Slot 1 and verify slot becomes instantly free
-        target_date = datetime.date(2026, 8, 31)
-        try:
-            # 1. State Before
-            free_before = [r["room_number"] for r in db.call_find_free_rooms(target_date, slot_id=1)]
-            room_1_free_before = "CR-A101" in free_before
-
-            # 2. Cancel single occurrence
-            db.call_cancel_occurrence(1, target_date, "Simulated Conference Leave")
-
-            # 3. State After
-            free_after = [r["room_number"] for r in db.call_find_free_rooms(target_date, slot_id=1)]
-            room_1_free_after = "CR-A101" in free_after
-
-            res = {
-                "status": "SUCCESS",
-                "date": str(target_date),
-                "room": "CR-A101",
-                "slot": "Slot 1 (08:30 - 09:30)",
-                "room_free_before": room_1_free_before,
-                "room_free_after": room_1_free_after,
-                "explanation": "Upon setting status = 'CANCELLED', the expression in UQ_ACTIVE_ROOM_DATE_SLOT evaluated to NULL and dropped out of the index. Room CR-A101 instantly reappeared as free in find_free_rooms while the other 15 weeks remain active!"
-            }
-        except Exception as e:
-            res = {"status": "ERROR", "message": str(e)}
-
-    elif scenario == "atomic_rollback":
-        # Periodic booking with conflict on date
-        res = {
-            "status": "ROLLED_BACK",
-            "message": "All 17 candidate occurrences were atomically rolled back via PL/SQL SAVEPOINT sp_book_periodic. Total orphaned rows inserted: 0.",
-            "explanation": "Oracle ACID Transaction Atomicity demonstrated: If even 1 out of 17 weekly lectures conflicts with a holiday, event, or existing session, ROLLBACK TO SAVEPOINT guarantees zero partial data corruption."
-        }
-
-    return jsonify(res)
-
-
-# ----------------------------------------------------------------------------
-# 9. 2D ROOM OCCUPANCY HEATMAP & LIVE FLOOR MAP
+# 8. 2D ROOM OCCUPANCY HEATMAP & LIVE FLOOR MAP
 # ----------------------------------------------------------------------------
 @app.route("/occupancy-map")
 @app.route("/heatmap")
@@ -1024,7 +934,7 @@ def occupancy_map():
 
 
 # ----------------------------------------------------------------------------
-# 10. INTERACTIVE 3NF SCHEMA & ENTITY EXPLORER
+# 9. INTERACTIVE 3NF SCHEMA & ENTITY EXPLORER
 # ----------------------------------------------------------------------------
 @app.route("/schema-explorer")
 def schema_explorer():
